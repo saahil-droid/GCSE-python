@@ -1,0 +1,14 @@
+from astroquery.ipac.nexsci.nasa_exoplanet_archive import NasaExoplanetArchive
+
+print("Querying NASA Exoplanet Archive...")
+koi_table = NasaExoplanetArchive.query_criteria(
+    table="cumulative",
+    select="kepoi_name,koi_disposition,koi_period,kepid"
+)
+print(f"Query complete! Got {len(koi_table)} rows")
+
+print(koi_table[:5])
+print("Unique dispositions:", set(koi_table['koi_disposition']))
+
+koi_table.write('all_koi_table.csv', format='csv', overwrite=True)
+print("Saved to all_koi_table.csv")
