@@ -1,0 +1,212 @@
+# TensorFlow and tf.keras
+import tensorflow as tf
+
+
+import numpy as np
+import matplotlib.pyplot as plt
+
+print(tf.__version__)
+
+fashion_mnist = tf.keras.datasets.fashion_mnist #the fashion_mnist dataset is a collection of 70,000 grayscale images of 10 different categories of clothing items, such as t-shirts, trousers, dresses, etc. It is commonly used for training and testing machine learning models in the field of computer vision. Each image in the dataset is 28x28 pixels in size and is labeled with the corresponding category of clothing item it represents. The dataset is often used as a benchmark for evaluating the performance of image classification algorithms.
+
+(train_images, train_labels), (test_images, test_labels) = fashion_mnist.load_data() #loads the dataset and splits it into training and testing sets.
+
+
+class_names = ['T-shirt/top', 'Trouser', 'Pullover', 'Dress', 'Coat',
+               'Sandal', 'Shirt', 'Sneaker', 'Bag', 'Ankle boot']
+
+
+print(train_images.shape)
+print(len(train_labels))
+print(train_labels)
+print(test_images.shape)
+print(len(test_labels))
+print(test_labels)
+
+
+#prepocessing the data
+plt.figure()
+plt.imshow(train_images[0])
+plt.colorbar()
+plt.grid(False)
+plt.show()
+
+#the pixel values in the images are in the range of 0 to 255. we will scale these values to be between 0 and 1 before feeding them to the nueral network model. 
+train_images = train_images / 255.0
+
+test_images = test_images / 255.0
+
+#display the first 25 images from the training set and display the class name below each image. confirm that the data is in the correct format and ready for training the model.
+plt.figure(figsize=(10,10))
+for i in range(25):
+    plt.subplot(5,5,i+1) #the subplot function is used to create a grid of subplots within a single figure.
+    plt.xticks([]) #set the x axis ticks to an empty list, which means that no tick marks will be displayed on the x-axis of the subplot. This is often done to create a cleaner and more visually appealing plot, especially when the x-axis values are not important for the interpretation of the data being displayed.
+    plt.yticks([]) #set the y axis ticks to an empty list, which means that no tick marks will be displayed on the y-axis of the subplot. This is often done to create a cleaner and more visually appealing plot, especially when the y-axis values are not important for the interpretation of the data being displayed.
+    plt.grid(False) 
+    plt.imshow(train_images[i], cmap=plt.cm.binary) #imshow -> plot an image, cmap -> colormap, plt.cm.binary - colour map that is black and white ie: grey scale
+    plt.xlabel(class_names[train_labels[i]])
+plt.show()
+
+
+#build the model
+
+model = tf.keras.Sequential([ #the sequential model is a linear stack of layers, which allows us to build a neural network by adding layers one after the other in a sequential manner. It is a simple and convenient way to create a feedforward neural network, where the output of one layer is the input to the next layer.
+    tf.keras.layers.Flatten(input_shape=(28, 28)), #the flatten layer is used to convert the 2D array of pixel values (28x28) into a 1D array of 784 values. This is necessary because the dense layers that follow expect a 1D input. The flatten layer does not have any learnable parameters; it simply reshapes the input data.
+    tf.keras.layers.Dense(128, activation='relu'), # the dense layer is a fully connected layer, which means that each neuron in the layer is connected to every neuron in the previous layer. The first argument (128) specifies the number of neurons in the layer, and the activation argument specifies the activation function to be used. In this case, we are using the ReLU (Rectified Linear Unit) activation function, which is a commonly used activation function in neural networks that helps to introduce non-linearity into the model and allows it to learn complex patterns in the data.
+    tf.keras.layers.Dense(10)
+])
+
+
+model.compile(optimizer='adam', #adam is an optimization algorithm that is used to update the weights of the neural network during training. It combines the advantages of two other popular optimization algorithms, AdaGrad and RMSProp, to provide efficient and effective training of deep learning models. Adam stands for Adaptive Moment Estimation, and it computes adaptive learning rates for each parameter based on the first and second moments of the gradients. This allows it to converge faster and perform better on a wide range of problems compared to traditional optimization algorithms like stochastic gradient descent (SGD).
+              loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
+              metrics=['accuracy'])
+
+
+#Before the model is ready for training, it needs a few more settings. These are added during the model's compile step:
+
+#Optimizer —This is how the model is updated based on the data it sees and its loss function.
+#Loss function —This measures how accurate the model is during training. You want to minimize this function to "steer" the model in the right direction.
+#metrics —Used to monitor the training and testing steps. The following example uses accuracy, the fraction of the images that are correctly classified.
+
+#-----------------------------------------------------------------------------------------------------
+
+#HOW TO TRAIN THE MODEL:
+#Feed the training data to the model. In this example, the training data is in the train_images and train_labels arrays.
+#The model learns to associate images (DATA) and labels.
+#You ask the model to make predictions about a test set—in this example, the test_images array.
+#Verify that the predictions match the labels from the test_labels array.
+
+model.fit(train_images, train_labels, epochs =10) #model.fit() fits the model to the training data. --> epochs=10 means the model will go through the entire training dataset 10 time. 
+
+#evaluate the accuracy of the model on the test dataset
+test_loss, test_acc = model.evaluate(test_images,  test_labels, verbose=2)
+
+print('\nTest accuracy:', test_acc)
+
+#the model is now trained
+
+
+#make predictions on some
+probability_model = tf.keras.Sequential([model, 
+                                         tf.keras.layers.Softmax()])
+
+predictions = probability_model.predict(test_images)
+
+
+
+
+predictions[0] #the model has predicted that the first image in the test set is most likely to be ankle boot.
+print(predictions[0])
+
+#lets see which label has the highest confidence score
+most_confident = np.argmax(predictions[0]) #the np.argmax() function is used to find the index
+print(most_confident)
+
+print(f"Label {most_confident} corresponds to: {class_names[most_confident]}")
+
+
+#we can verify this conclusion by looking at the first image presented
+
+
+#Define functions to graph the full set of 10 class predictions.
+
+def plot_image(i, predictions_array, true_label, img): 
+  true_label, img = true_label[i], img[i]
+  plt.grid(False) 
+  plt.xticks([])
+  plt.yticks([])
+
+  plt.imshow(img, cmap=plt.cm.binary) #the cmap argument specifies the colormap to be used for displaying the image. In this case, plt.cm.binary is a colormap that displays the image in black and white, where the pixel values are represented as shades of gray. This is often used for visualizing grayscale images, such as those in the fashion_mnist dataset, where the pixel values range from 0 (black) to 255 (white). By using this colormap, we can easily see the details of the image and identify the features that the model is using to make its predictions.
+
+  predicted_label = np.argmax(predictions_array)
+  if predicted_label == true_label:
+    color = 'blue'
+  else:
+    color = 'red'
+
+  plt.xlabel("{} {:2.0f}% ({})".format(class_names[predicted_label],
+                                100*np.max(predictions_array),
+                                class_names[true_label]),
+                                color=color)
+
+def plot_value_array(i, predictions_array, true_label):
+  true_label = true_label[i]
+  plt.grid(False)
+  plt.xticks(range(10))
+  plt.yticks([])
+  thisplot = plt.bar(range(10), predictions_array, color="#777777")
+  plt.ylim([0, 1])
+  predicted_label = np.argmax(predictions_array)
+
+  thisplot[predicted_label].set_color('red')
+  thisplot[true_label].set_color('blue')
+
+
+
+#----------------Verify predictions
+#With the model trained, you can use it to make predictions about some images.
+
+#Let's look at the 0th image, predictions, and prediction array. Correct prediction labels are blue and incorrect prediction labels are red. The number gives the percentage (out of 100) for the predicted label.
+
+i = 0
+plt.figure(figsize=(6,3))
+plt.subplot(1,2,1)
+plot_image(i, predictions[i], test_labels, test_images)
+plt.subplot(1,2,2)
+plot_value_array(i, predictions[i],  test_labels)
+plt.show()
+
+
+
+#lets try with another one.
+
+i = 12
+plt.figure(figsize=(6,3))
+plt.subplot(1,2,1)
+plot_image(i, predictions[i], test_labels, test_images)
+plt.subplot(1,2,2)
+plot_value_array(i, predictions[i],  test_labels)
+plt.show()
+
+
+#now lets put lots of them together.
+# Plot the first X test images, their predicted labels, and the true labels.
+# Color correct predictions in blue and incorrect predictions in red.
+num_rows = 5
+num_cols = 3
+num_images = num_rows*num_cols
+plt.figure(figsize=(2*2*num_cols, 2*num_rows))
+for i in range(num_images):
+  plt.subplot(num_rows, 2*num_cols, 2*i+1)
+  plot_image(i, predictions[i], test_labels, test_images)
+  plt.subplot(num_rows, 2*num_cols, 2*i+2)
+  plot_value_array(i, predictions[i], test_labels)
+plt.tight_layout()
+plt.show()
+
+
+
+
+
+
+#NOW IT IS TIME TO ACC USE THE MODEL:
+
+img = test_images[1]
+
+# Add the image to a batch where it's the only member.
+img = (np.expand_dims(img,0))
+print(img.shape)
+#-> we have to add it to a batch as tf.keras models are optimised to make predictions on a batch. even if it is only one image
+
+predictions_single = probability_model.predict(img)
+
+print(predictions_single)
+
+plot_value_array(1, predictions_single[0], test_labels)
+_ = plt.xticks(range(10), class_names, rotation=45)
+plt.show()
+
+np.argmax(predictions_single[0])
+
+
+
